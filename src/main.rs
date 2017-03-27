@@ -5,7 +5,8 @@ use piston_window::*;
 struct ColoredRect{
     pub color: [f32; 4],
     pub position: [f64; 4],
-    velocity: [f64; 2]
+    velocity: [f64; 2],
+    delta_time: f64
 }
 
 impl ColoredRect{
@@ -13,7 +14,8 @@ impl ColoredRect{
         ColoredRect{
             color: [1.0, 0.5, 0.25, 1.0],
             position: [0.0, 0.0, 100.0, 100.0],
-            velocity: [0.3, 0.3]
+            velocity: [1.0, 1.0],
+            delta_time: 0.0
         }
     }
 
@@ -30,24 +32,34 @@ impl ColoredRect{
         self.color[1] = Self::update_color(dt as f32, self.color[1]);
         self.color[2] = Self::update_color(dt as f32, self.color[2]);
 
+        self.delta_time = dt;
+
         //X Updates
-        if self.position[0] + self.position[2] >= size.0 ||
-            self.position[0] < 0.0 {
-                self.velocity[0] = -self.velocity[0];
+        if self.position[0] + self.position[2] >= size.0{
+            self.position[0] = size.0;
         }
-        self.position[0] += self.velocity[0] * dt * 120.0;
+        if self.position[0] < 0.0{
+            self.position[0] = 0.0
+        }
 
         //Y Updates
-        if self.position[1] + self.position[3] >= size.1 ||
-            self.position[1] < 0.0 {
-                self.velocity[1] = -self.velocity[1];
+        if self.position[1] + self.position[3] >= size.1{
+                self.position[1] = size.1;
         }
-        self.position[1] += self.velocity[1] * dt * 120.0;
+
+        if self.position[1] < 0.0 {
+            self.position[1] = 0.0;
+        }
     }
 
     fn change_velocity(&mut self, factor: f64){
         self.velocity[0] *= factor;
         self.velocity[1] *= factor;
+    }
+
+    fn move_obj(&mut self, value: (f64, f64)){
+        self.position[0] += (self.velocity[0] * value.0) * self.delta_time * 120.0;
+        self.position[1] += (self.velocity[1] * value.1) * self.delta_time * 120.0;
     }
 }
 
@@ -81,10 +93,16 @@ fn main(){
                     Button::Keyboard(k) => {
                         match k {
                             Key::W => {
-                                rect.change_velocity(1.1);
+                                rect.move_obj((0.0, -1.0));
                             }
                             Key::S => {
-                                rect.change_velocity(0.9);
+                                rect.move_obj((0.0, 1.0));
+                            }
+                            Key::A => {
+                                rect.move_obj((-1.0, 0.0));
+                            }
+                            Key::D => {
+                                rect.move_obj((1.0, 0.0));
                             }
                             _ => {}
                         };
