@@ -2,11 +2,32 @@ extern crate piston_window;
 
 use piston_window::*;
 
+mod utility;
+
+struct InputFlg{
+    FORWARD: bool,
+    BACK: bool,
+    RIGHT: bool,
+    LEFT: bool
+}
+
+impl InputFlg{
+    fn new() -> Self{
+        InputFlg{
+            FORWARD: false,
+            BACK: false,
+            RIGHT: false,
+            LEFT: false
+        }
+    }
+}
+
 struct ColoredRect{
     pub color: [f32; 4],
     pub position: [f64; 4],
     velocity: [f64; 2],
-    delta_time: f64
+    move_dir: [f64; 2],
+    input_flg: InputFlg
 }
 
 impl ColoredRect{
@@ -15,7 +36,8 @@ impl ColoredRect{
             color: [1.0, 0.5, 0.25, 1.0],
             position: [0.0, 0.0, 100.0, 100.0],
             velocity: [1.0, 1.0],
-            delta_time: 0.0
+            move_dir: [0.0, 0.0],
+            input_flg: InputFlg::new()
         }
     }
 
@@ -32,7 +54,8 @@ impl ColoredRect{
         self.color[1] = Self::update_color(dt as f32, self.color[1]);
         self.color[2] = Self::update_color(dt as f32, self.color[2]);
 
-        self.delta_time = dt;
+        self.change_move_dir();
+        self.move_obj(dt);
 
         //X Updates
         if self.position[0] + self.position[2] >= size.0{
@@ -52,14 +75,57 @@ impl ColoredRect{
         }
     }
 
-    fn change_velocity(&mut self, factor: f64){
-        self.velocity[0] *= factor;
-        self.velocity[1] *= factor;
+    fn change_move_dir(&mut self){
+        if self.input_flg.FORWARD == true {
+            self.move_dir[1] += -1.0;
+        }
+
+        if self.input_flg.BACK == true {
+            self.move_dir[1] += 1.0;
+        }
+
+        self.move_dir[1] = utility::clamp(self.move_dir[1], -1.0, 1.0);
+
+        if self.input_flg.BACK == false && self.input_flg.FORWARD == false {
+            self.move_dir[1] = 0.0;
+        }
+
+        if self.input_flg.RIGHT == true {
+            self.move_dir[0] += 1.0;
+        }
+
+        if self.input_flg.LEFT == true {
+            self.move_dir[0] += -1.0;
+        }
+
+        self.move_dir[0] = utility::clamp(self.move_dir[0], -1.0, 1.0);
+
+        if self.input_flg.RIGHT == false && self.input_flg.LEFT == false {
+            self.move_dir[0] = 0.0;
+        }
     }
 
-    fn move_obj(&mut self, value: (f64, f64)){
-        self.position[0] += (self.velocity[0] * value.0) * self.delta_time * 120.0;
-        self.position[1] += (self.velocity[1] * value.1) * self.delta_time * 120.0;
+    fn change_input_flg(&mut self, dir: i32, flg: bool){
+        match dir{
+            0 => {
+                self.input_flg.FORWARD = flg;
+            }
+            1 => {
+                self.input_flg.BACK = flg;
+            }
+            2 => {
+                self.input_flg.RIGHT = flg;
+            }
+            3 => {
+                self.input_flg.LEFT = flg;
+            }
+            _ => {}
+        }
+    }
+
+    fn move_obj(&mut self, delta_time: f64){
+        self.position[0] += (self.velocity[0] * self.move_dir[0]) * delta_time * 120.0;
+        self.position[1] += (self.velocity[1] * self.move_dir[1]) * delta_time * 120.0;
     }
 }
 
@@ -93,18 +159,44 @@ fn main(){
                     Button::Keyboard(k) => {
                         match k {
                             Key::W => {
-                                rect.move_obj((0.0, -1.0));
+                                rect.change_input_flg(0, true);
                             }
                             Key::S => {
-                                rect.move_obj((0.0, 1.0));
+                                rect.change_input_flg(1, true);
                             }
                             Key::A => {
-                                rect.move_obj((-1.0, 0.0));
+                                rect.change_input_flg(3, true);
                             }
                             Key::D => {
-                                rect.move_obj((1.0, 0.0));
+                                rect.change_input_flg(2, true);
                             }
-                            _ => {}
+                            _ => {
+                                //rect.change_move_dir((0.0, 0.0));
+                            }
+                        };
+                    }
+                    _ => {}
+                };
+            }
+            Input::Release(b) => {
+                match b {
+                    Button::Keyboard(k) => {
+                        match k {
+                            Key::W => {
+                                rect.change_input_flg(0, false);
+                            }
+                            Key::S => {
+                                rect.change_input_flg(1, false);
+                            }
+                            Key::A => {
+                                rect.change_input_flg(3, false);
+                            }
+                            Key::D => {
+                                rect.change_input_flg(2, false);
+                            }
+                            _ => {
+                                //rect.change_move_dir((0.0, 0.0));
+                            }
                         };
                     }
                     _ => {}
