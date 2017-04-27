@@ -4,6 +4,8 @@ use piston_window::*;
 
 mod utility;
 
+mod RectActor;
+
 struct InputFlg{
     FORWARD: bool,
     BACK: bool,
